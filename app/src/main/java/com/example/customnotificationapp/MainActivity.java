@@ -1,9 +1,15 @@
 package com.example.customnotificationapp;
 
+import android.annotation.SuppressLint;
+import android.app.AlarmManager;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
@@ -16,8 +22,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
-import com.google.android.material.button.MaterialButton;
 
 import java.util.Calendar;
 
@@ -60,20 +64,49 @@ public class MainActivity extends AppCompatActivity {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(MainActivity.this,
                         android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                     activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+                    AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                    if (!alarmManager.canScheduleExactAlarms()) {
+                        Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                        startActivity(intent);
+                    }
                 } else {
-                    Medicamentation med = setMedicamentation();
+                    Medication med = setMedicamentation();
 
                     Calendar notificationTime = Calendar.getInstance();
                     notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
 
-                    //Schedule the notification
-                    notificationHelper.createNotification("Meds Reminder", "It's time to take the " + med.getMedName() + "!");
+                    if (notificationTime.before(Calendar.getInstance())) {
+                        Toast.makeText(MainActivity.this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis());
+                    Toast.makeText(MainActivity.this, "Notification set!", Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
 
-    private Medicamentation setMedicamentation(){
+    @SuppressLint("NewApi")
+    private void scheduleNotification(String medName, long triggerTime) {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        if (alarmManager.canScheduleExactAlarms()) {
+            Intent intent = new Intent(this, NotificationReceiver.class);
+            intent.putExtra("title", "Meds Reminder");
+            intent.putExtra("text", "It's time to take the " + medName + "!");
+
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                    this, (int) triggerTime, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+            Toast.makeText(this, "Medication reminder set!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Please allow exact alarm permission in settings", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Medication setMedicamentation(){
         //getting each element
         String medName = editTextMedName.getText().toString();
         int year = datePicker.getYear();
@@ -81,7 +114,9 @@ public class MainActivity extends AppCompatActivity {
         int day = datePicker.getDayOfMonth();
         int hour = timePicker.getHour();
         int minute = timePicker.getMinute();
-        return new Medicamentation(medName, year, month, day, hour, minute);
+
+        Log.d("My app", "medName" + year + " " + month + " " + day + " " + hour);
+        return new Medication(medName, year, month, day, hour, minute);
     }
 }
 

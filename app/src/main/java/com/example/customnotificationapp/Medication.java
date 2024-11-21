@@ -1,6 +1,6 @@
 package com.example.customnotificationapp;
 
-public class Medicamentation {
+public class Medication {
     private String medName;
     private int year;
     private int month;
@@ -8,7 +8,7 @@ public class Medicamentation {
     private int hour;
     private int minute;
 
-    public Medicamentation(String medName, int year, int month, int day, int hour, int minute){
+    public Medication(String medName, int year, int month, int day, int hour, int minute){
         this.medName = medName;
         this.year = year;
         this.month = month;
