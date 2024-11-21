@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TimePicker;
 import android.widget.Toast;
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText editTextMedName;
     private TimePicker timePicker;
     private Button btnAddMed;
+    private DatePicker datePicker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +48,9 @@ public class MainActivity extends AppCompatActivity {
         editTextMedName = findViewById(R.id.editTextMedName);
         timePicker = findViewById(R.id.timePicker);
         btnAddMed = findViewById(R.id.buttonAddMed);
+        datePicker = findViewById(R.id.datePicker);
+
+        //creating a notification
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         NotificationHelper notificationHelper = new NotificationHelper(MainActivity.this, notificationManager);
 
@@ -56,20 +61,28 @@ public class MainActivity extends AppCompatActivity {
                         android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                     activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
                 } else {
-                    String medName = editTextMedName.getText().toString();
-                    int hour = timePicker.getHour();
-                    int minute = timePicker.getMinute();
+                    Medicamentation med = setMedicamentation();
 
                     Calendar notificationTime = Calendar.getInstance();
-                    notificationTime.set(Calendar.HOUR_OF_DAY, hour);
-                    notificationTime.set(Calendar.MINUTE, minute);
-                    notificationTime.set(Calendar.SECOND, 0);
-                    notificationTime.set(Calendar.MILLISECOND , 0);
+                    notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
 
                     //Schedule the notification
-                    notificationHelper.createNotification("Meds Reminder", "It's time to take the " + medName + "!");
+                    notificationHelper.createNotification("Meds Reminder", "It's time to take the " + med.getMedName() + "!");
                 }
             }
         });
     }
+
+    private Medicamentation setMedicamentation(){
+        //getting each element
+        String medName = editTextMedName.getText().toString();
+        int year = datePicker.getYear();
+        int month = datePicker.getMonth();
+        int day = datePicker.getDayOfMonth();
+        int hour = timePicker.getHour();
+        int minute = timePicker.getMinute();
+        return new Medicamentation(medName, year, month, day, hour, minute);
+    }
 }
+
+
