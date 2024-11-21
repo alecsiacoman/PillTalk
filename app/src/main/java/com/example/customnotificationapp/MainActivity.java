@@ -9,6 +9,10 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.speech.RecognitionListener;
+import android.speech.RecognitionService;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -22,10 +26,18 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
+
+    private EditText editTextMedName;
+    private TimePicker timePicker;
+    private Button btnAddMed;
+    private Button btnVoice;
+    private DatePicker datePicker;
+    private VoiceRecognitionHelper voiceRecognitionHelper;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
             new ActivityResultCallback<Boolean>() {
@@ -39,16 +51,14 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
-    private EditText editTextMedName;
-    private TimePicker timePicker;
-    private Button btnAddMed;
-    private DatePicker datePicker;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        voiceRecognitionHelper = new VoiceRecognitionHelper(this, this);
+
+        btnVoice = findViewById(R.id.buttonVoice);
         editTextMedName = findViewById(R.id.editTextMedName);
         timePicker = findViewById(R.id.timePicker);
         btnAddMed = findViewById(R.id.buttonAddMed);
@@ -58,6 +68,19 @@ public class MainActivity extends AppCompatActivity {
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         NotificationHelper notificationHelper = new NotificationHelper(MainActivity.this, notificationManager);
 
+        btnVoice.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                // Check if the app has microphone permission
+                if (ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    // Request the permission
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
+                } else {
+                    // Permission already granted, start speech recognition
+                    voiceRecognitionHelper.startListening();
+                }
+            }
+        });
         btnAddMed.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -85,6 +108,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    public void handleVoiceCommand(String command){
+        if(command.toLowerCase().contains("set reminder")){
+            scheduleNotification("Notification set by voice", Calendar.getInstance().getTimeInMillis());
+        }
     }
 
     @SuppressLint("NewApi")
