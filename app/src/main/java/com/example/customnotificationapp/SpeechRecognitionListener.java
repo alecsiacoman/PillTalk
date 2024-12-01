@@ -45,7 +45,7 @@ public class SpeechRecognitionListener implements RecognitionListener{
 
     @Override
     public void onError(int error) {
-        String errorMessage = "Error in speech recognition";
+        String errorMessage = "Error in speech recognition: " + error;
         switch (error) {
             case SpeechRecognizer.ERROR_AUDIO:
                 errorMessage = "Audio recording error";
@@ -56,8 +56,30 @@ public class SpeechRecognitionListener implements RecognitionListener{
             case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
                 errorMessage = "Insufficient permissions";
                 break;
+            case SpeechRecognizer.ERROR_NETWORK:
+                errorMessage = "Network error";
+                break;
+            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
+                errorMessage = "Network timeout";
+                break;
+            case SpeechRecognizer.ERROR_NO_MATCH:
+                errorMessage = "No speech match found";
+                break;
+            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
+                errorMessage = "Speech recognizer is busy";
+                break;
+            case SpeechRecognizer.ERROR_SERVER:
+                errorMessage = "Server error";
+                break;
+            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
+                errorMessage = "Speech timeout";
+                break;
+            default:
+                errorMessage = "Unknown error";
+                break;
         }
         Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show();
+
     }
 
     @Override
@@ -66,6 +88,8 @@ public class SpeechRecognitionListener implements RecognitionListener{
         if(matches != null && !matches.isEmpty()){
             String spokenText = matches.get(0);
             onVoiceCommandRecognized(spokenText);
+        } else {
+            Toast.makeText(context, "No speech match found", Toast.LENGTH_SHORT).show();
         }
     }
 
