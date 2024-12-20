@@ -106,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     }
-
     private void setMedicationByVoice(String str) {
         String timePattern = "(\\d{1,2})(:\\d{2})?\\s*(a\\.m\\.|am|p\\.m\\.|pm)";
         String dayPattern = "(today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)";
@@ -116,45 +115,51 @@ public class MainActivity extends AppCompatActivity {
         String timeMatch = "";
         String dayMatch = "";
 
+        // Extract time and day from the voice command
         java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile(timePattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
-        if (timeMatcher.find())
+        if (timeMatcher.find()) {
             timeMatch = timeMatcher.group();
+        }
 
         java.util.regex.Matcher dayMatcher = java.util.regex.Pattern.compile(dayPattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
-        if (dayMatcher.find())
+        if (dayMatcher.find()) {
             dayMatch = dayMatcher.group();
-        else
-            dayMatch = "today"; // Default to today if no day is mentioned
+        } else {
+            dayMatch = "today"; // Default to "today" if no day is mentioned
+        }
 
-        if (timeMatch.isEmpty()) {
-            Toast.makeText(this, "Could not understand the time. Please try again.", Toast.LENGTH_SHORT).show();
+        if(timeMatch.isEmpty() || dayMatch.isEmpty()){
+            Toast.makeText(this, "Please specifi time (am/pm) and date", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int hour = Integer.parseInt(timeMatch.replaceAll("[^\\d]", ""));
-        boolean isPM = timeMatch.toLowerCase().contains("pm");
-        if (isPM && hour != 12) hour += 12;
-        if (!isPM && hour == 12) hour = 0;
-
+        int hour = 0;
         int minute = 0;
-        if (timeMatch.contains(":")) {
-            minute = Integer.parseInt(timeMatch.split(":")[1].replaceAll("[^\\d]", ""));
+        boolean isPM = false;
+
+        if (timeMatch.toLowerCase().contains("p.m.")) {
+            isPM = true;
         }
 
-        Calendar now = Calendar.getInstance();
+        String[] timeParts = timeMatch.split(":");
+        hour = Integer.parseInt(timeParts[0].trim());
+
+        if (timeParts.length > 1) {
+            minute = Integer.parseInt(timeParts[1].trim().replaceAll("[^\\d]", ""));
+        }
+
+        if (isPM) {
+            if (hour != 12) hour += 12;
+        } else {
+            if (hour == 12) hour = 0;
+        }
+
+        Medication med = setMedicamentation();
+        med.setHour(hour);
+        med.setMinute(minute);
+
         Calendar notificationTime = Calendar.getInstance();
-
-        if (!dayMatch.equalsIgnoreCase("today")) {
-            int today = now.get(Calendar.DAY_OF_WEEK);
-            int targetDay = getDayOfWeek(dayMatch.toLowerCase());
-            int daysUntilTarget = (targetDay - today + 7) % 7;
-
-            notificationTime.add(Calendar.DAY_OF_YEAR, daysUntilTarget);
-        }
-
-        notificationTime.set(Calendar.HOUR_OF_DAY, hour);
-        notificationTime.set(Calendar.MINUTE, minute);
-        notificationTime.set(Calendar.SECOND, 0);
+        notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
 
         if (notificationTime.before(Calendar.getInstance())) {
             Toast.makeText(this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
@@ -164,6 +169,7 @@ public class MainActivity extends AppCompatActivity {
         scheduleNotification("Medication Reminder", notificationTime.getTimeInMillis());
         Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
     }
+
 
     private int getDayOfWeek(String day) {
         switch (day) {
