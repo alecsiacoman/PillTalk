@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
     private TimePicker timePicker;
     private Button btnAddMed;
     private DatePicker datePicker;
-    private TextView textView;
     private String voiceAlarm;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
@@ -57,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
         timePicker = findViewById(R.id.timePicker);
         btnAddMed = findViewById(R.id.buttonAddMed);
         datePicker = findViewById(R.id.datePicker);
-        textView = findViewById(R.id.textView);
 
         btnAddMed.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -101,9 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
         if(requestCode == 100 && resultCode == RESULT_OK){
             voiceAlarm = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
-            textView.setText(voiceAlarm);
             setMedicationByVoice(voiceAlarm);
-
         }
     }
     private void setMedicationByVoice(String str) {
@@ -166,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        scheduleNotification("Medication Reminder", notificationTime.getTimeInMillis());
+        scheduleNotification("Medication", notificationTime.getTimeInMillis());
         Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
     }
 
@@ -212,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Medication setMedicamentation(){
-        //getting each element
         String medName = editTextMedName.getText().toString();
         int year = datePicker.getYear();
         int month = datePicker.getMonth();
@@ -223,6 +218,10 @@ public class MainActivity extends AppCompatActivity {
         return new Medication(medName, year, month, day, hour, minute);
     }
 
+    public void navigateToHomePage(View view) {
+        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+        startActivity(intent);
+    }
 }
 
 

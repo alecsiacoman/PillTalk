@@ -6,6 +6,15 @@
     android:gravity="center"
     android:padding="16dp">
 
+    <Button
+        android:id="@+id/buttonBack"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:backgroundTint="@android:color/holo_green_light"
+        android:text="Back"
+        android:onClick="navigateToHomePage"
+        android:layout_gravity="start"/>
+
     <EditText
         android:id="@+id/editTextMedName"
         android:layout_width="match_parent"
@@ -16,14 +25,15 @@
     <TimePicker
         android:id="@+id/timePicker"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="200dp"
         android:timePickerMode="spinner" />
 
     <DatePicker
         android:id="@+id/datePicker"
         android:layout_width="wrap_content"
-        android:layout_height="316dp"
-        android:layout_marginBottom="16dp" />
+        android:layout_height="300dp"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="@android:color/holo_green_light"/>
 
     <Button
         android:id="@+id/buttonAddMed"
@@ -39,13 +49,6 @@
         android:backgroundTint="@android:color/holo_green_light"
         android:text="Set by voice"
         android:onClick="speak"/>
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp"
-        />
 
 </LinearLayout>
 
