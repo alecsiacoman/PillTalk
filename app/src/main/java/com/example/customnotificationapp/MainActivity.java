@@ -9,25 +9,22 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.speech.RecognitionListener;
-import android.speech.RecognitionService;
 import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,9 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private EditText editTextMedName;
     private TimePicker timePicker;
     private Button btnAddMed;
-    private Button btnVoice;
     private DatePicker datePicker;
-    private VoiceRecognitionHelper voiceRecognitionHelper;
+    private TextView textView;
+    private String voiceAlarm;
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
             new ActivityResultCallback<Boolean>() {
@@ -56,31 +53,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        voiceRecognitionHelper = new VoiceRecognitionHelper(this, this);
-
-        btnVoice = findViewById(R.id.buttonVoice);
         editTextMedName = findViewById(R.id.editTextMedName);
         timePicker = findViewById(R.id.timePicker);
         btnAddMed = findViewById(R.id.buttonAddMed);
         datePicker = findViewById(R.id.datePicker);
+        textView = findViewById(R.id.textView);
 
-        //creating a notification
-        NotificationManager notificationManager = getSystemService(NotificationManager.class);
-        NotificationHelper notificationHelper = new NotificationHelper(MainActivity.this, notificationManager);
-
-        btnVoice.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                // Check if the app has microphone permission
-                if (ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    // Request the permission
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.RECORD_AUDIO}, 1);
-                } else {
-                    // Permission already granted, start speech recognition
-                    voiceRecognitionHelper.startListening();
-                }
-            }
-        });
         btnAddMed.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -110,9 +88,101 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void handleVoiceCommand(String command){
-        if(command.toLowerCase().contains("set reminder")){
-            scheduleNotification("Notification set by voice", Calendar.getInstance().getTimeInMillis());
+    public void speak(View view){
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Start Speaking");
+        startActivityForResult(intent, 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == 100 && resultCode == RESULT_OK){
+            voiceAlarm = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
+            textView.setText(voiceAlarm);
+            setMedicationByVoice(voiceAlarm);
+
+        }
+    }
+
+    private void setMedicationByVoice(String str) {
+        String timePattern = "(\\d{1,2})(:\\d{2})?\\s*(a\\.m\\.|am|p\\.m\\.|pm)";
+        String dayPattern = "(today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)";
+
+        Log.d("Voice Message", str);
+
+        String timeMatch = "";
+        String dayMatch = "";
+
+        java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile(timePattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
+        if (timeMatcher.find())
+            timeMatch = timeMatcher.group();
+
+        java.util.regex.Matcher dayMatcher = java.util.regex.Pattern.compile(dayPattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
+        if (dayMatcher.find())
+            dayMatch = dayMatcher.group();
+        else
+            dayMatch = "today"; // Default to today if no day is mentioned
+
+        if (timeMatch.isEmpty()) {
+            Toast.makeText(this, "Could not understand the time. Please try again.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        int hour = Integer.parseInt(timeMatch.replaceAll("[^\\d]", ""));
+        boolean isPM = timeMatch.toLowerCase().contains("pm");
+        if (isPM && hour != 12) hour += 12;
+        if (!isPM && hour == 12) hour = 0;
+
+        int minute = 0;
+        if (timeMatch.contains(":")) {
+            minute = Integer.parseInt(timeMatch.split(":")[1].replaceAll("[^\\d]", ""));
+        }
+
+        Calendar now = Calendar.getInstance();
+        Calendar notificationTime = Calendar.getInstance();
+
+        if (!dayMatch.equalsIgnoreCase("today")) {
+            int today = now.get(Calendar.DAY_OF_WEEK);
+            int targetDay = getDayOfWeek(dayMatch.toLowerCase());
+            int daysUntilTarget = (targetDay - today + 7) % 7;
+
+            notificationTime.add(Calendar.DAY_OF_YEAR, daysUntilTarget);
+        }
+
+        notificationTime.set(Calendar.HOUR_OF_DAY, hour);
+        notificationTime.set(Calendar.MINUTE, minute);
+        notificationTime.set(Calendar.SECOND, 0);
+
+        if (notificationTime.before(Calendar.getInstance())) {
+            Toast.makeText(this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        scheduleNotification("Medication Reminder", notificationTime.getTimeInMillis());
+        Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
+    }
+
+    private int getDayOfWeek(String day) {
+        switch (day) {
+            case "monday":
+                return Calendar.MONDAY;
+            case "tuesday":
+                return Calendar.TUESDAY;
+            case "wednesday":
+                return Calendar.WEDNESDAY;
+            case "thursday":
+                return Calendar.THURSDAY;
+            case "friday":
+                return Calendar.FRIDAY;
+            case "saturday":
+                return Calendar.SATURDAY;
+            case "sunday":
+                return Calendar.SUNDAY;
+            default:
+                return -1;
         }
     }
 
@@ -144,9 +214,9 @@ public class MainActivity extends AppCompatActivity {
         int hour = timePicker.getHour();
         int minute = timePicker.getMinute();
 
-        Log.d("My app", "medName" + year + " " + month + " " + day + " " + hour);
         return new Medication(medName, year, month, day, hour, minute);
     }
+
 }
 
 
