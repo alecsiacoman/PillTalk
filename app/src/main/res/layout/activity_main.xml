@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@android:color/white"
     android:gravity="center"
     android:padding="16dp">
 
@@ -12,6 +13,7 @@
         android:layout_height="40dp"
         android:backgroundTint="@android:color/holo_green_light"
         android:text="Back"
+        android:textColor="@color/white"
         android:onClick="navigateToHomePage"
         android:layout_gravity="start"/>
 
@@ -39,13 +41,15 @@
         android:id="@+id/buttonAddMed"
         android:layout_width="wrap_content"
         android:layout_height="40dp"
-        android:backgroundTint="@android:color/holo_blue_light"
+        android:textColor="@color/white"
+        android:backgroundTint="@android:color/holo_green_dark"
         android:text="Add Medication" />
 
     <Button
         android:id="@+id/buttonVoice"
         android:layout_width="wrap_content"
         android:layout_height="40dp"
+        android:textColor="@color/white"
         android:backgroundTint="@android:color/holo_green_light"
         android:text="Set by voice"
         android:onClick="speak"/>

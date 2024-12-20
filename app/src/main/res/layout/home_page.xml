@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@android:color/white"
     android:gravity="start|top"
     android:padding="16dp">
 
@@ -13,6 +14,7 @@
         android:layout_height="wrap_content"
         android:inputType="text"
         android:text="Stress less."
+        android:textColor="@android:color/holo_green_light"
         android:gravity="start"
         android:textSize="30dp"/>
 
@@ -21,6 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="start"
+        android:textColor="@android:color/holo_green_light"
         android:inputType="text"
         android:text="Thrive more."
         android:textSize="30dp" />
@@ -29,6 +32,7 @@
         android:id="@+id/subtitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:textColor="@android:color/holo_green_dark"
         android:gravity="start"
         android:inputType="text"
         android:text="Set your medication reminder!"
@@ -45,6 +49,7 @@
         android:layout_margin="16dp"
         android:onClick="navigateToMainActivity"
         android:text="+"
+        android:textColor="@color/white"
         android:backgroundTint="@android:color/holo_green_light"
         android:textSize="40sp" />
 </FrameLayout>
