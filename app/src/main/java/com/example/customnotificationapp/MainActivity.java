@@ -79,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis());
+                    scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
 
                     MedicationManager.getInstance().addMedication(med);
 
@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        scheduleNotification("Medication", notificationTime.getTimeInMillis());
+        scheduleNotification("Medication", notificationTime.getTimeInMillis(), null);
 
         MedicationManager.getInstance().addMedication(med);
 
@@ -183,13 +183,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @SuppressLint("NewApi")
-    private void scheduleNotification(String medName, long triggerTime) {
+    private void scheduleNotification(String medName, long triggerTime, Medication med) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
         if (alarmManager.canScheduleExactAlarms()) {
             Intent intent = new Intent(this, NotificationReceiver.class);
             intent.putExtra("title", "Meds Reminder");
             intent.putExtra("text", "It's time to take the " + medName + "!");
+            if(med != null)
+                intent.putExtra("id", med.getId());
+            else
+                intent.putExtra("id", (int) triggerTime);
 
             PendingIntent pendingIntent = PendingIntent.getBroadcast(
                     this, (int) triggerTime, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
@@ -208,8 +212,9 @@ public class MainActivity extends AppCompatActivity {
         int day = datePicker.getDayOfMonth();
         int hour = timePicker.getHour();
         int minute = timePicker.getMinute();
+        int id = (int) System.currentTimeMillis();
 
-        return new Medication(medName, year, month, day, hour, minute);
+        return new Medication(medName, year, month, day, hour, minute, id);
     }
 
     public void navigateToHomePage(View view) {

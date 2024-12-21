@@ -7,30 +7,16 @@ public class Medication {
     private int day;
     private int hour;
     private int minute;
+    private int id;
 
-    public Medication(String medName, int year, int month, int day, int hour, int minute){
+    public Medication(String medName, int year, int month, int day, int hour, int minute, int id){
         this.medName = medName;
         this.year = year;
         this.month = month;
         this.day = day;
         this.hour = hour;
         this.minute = minute;
-    }
-
-    public void setMedName(String medName) {
-        this.medName = medName;
-    }
-
-    public void setYear(int year) {
-        this.year = year;
-    }
-
-    public void setMonth(int month) {
-        this.month = month;
-    }
-
-    public void setDay(int day) {
-        this.day = day;
+        this.id = id;
     }
 
     public void setHour(int hour) {
@@ -63,5 +49,9 @@ public class Medication {
 
     public int getMonth() {
         return month;
+    }
+
+    public int getId() {
+        return id;
     }
 }

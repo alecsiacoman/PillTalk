@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
+    private static HomeActivity instance;
     private List<Medication> medicationList;
     private RecyclerView medicationListView;
     private MedicationAdapter medicationAdapter;
@@ -20,6 +21,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.home_page);
+        instance = this;
 
         medicationList = MedicationManager.getInstance().getMedicationList();
 
@@ -41,5 +43,17 @@ public class HomeActivity extends AppCompatActivity {
     public void navigateToMainActivity(View view) {
         Intent intent = new Intent(HomeActivity.this, MainActivity.class);
         startActivity(intent);
+    }
+
+    public static HomeActivity getInstance() {
+        return instance;
+    }
+
+    public List<Medication> getMedicationList() {
+        return medicationList;
+    }
+
+    public MedicationAdapter getMedicationAdapter() {
+        return medicationAdapter;
     }
 }
