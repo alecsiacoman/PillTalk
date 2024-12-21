@@ -1,4 +1,4 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Controller;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
@@ -22,6 +22,10 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
+import com.example.customnotificationapp.Model.Medication;
+import com.example.customnotificationapp.R;
+import com.example.customnotificationapp.Repository.MedicationManager;
 
 import java.util.Calendar;
 import java.util.Objects;

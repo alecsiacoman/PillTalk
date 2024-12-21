@@ -1,4 +1,4 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Controller;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -6,6 +6,8 @@ import android.content.Context;
 import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
+
+import com.example.customnotificationapp.R;
 
 public class NotificationHelper {
     private final Context context;

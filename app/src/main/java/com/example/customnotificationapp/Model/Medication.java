@@ -1,4 +1,4 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Model;
 
 public class Medication {
     private String medName;

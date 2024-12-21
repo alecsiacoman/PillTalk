@@ -1,4 +1,6 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Repository;
+
+import com.example.customnotificationapp.Model.Medication;
 
 import java.util.ArrayList;
 import java.util.List;

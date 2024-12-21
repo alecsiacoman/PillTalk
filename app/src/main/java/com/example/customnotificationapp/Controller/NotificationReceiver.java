@@ -1,10 +1,12 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Controller;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+
+import com.example.customnotificationapp.Model.Medication;
 
 import java.util.List;
 

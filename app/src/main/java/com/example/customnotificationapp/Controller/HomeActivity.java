@@ -1,4 +1,4 @@
-package com.example.customnotificationapp;
+package com.example.customnotificationapp.Controller;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
@@ -8,6 +8,12 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.customnotificationapp.Repository.MedicationManager;
+import com.example.customnotificationapp.View.MedicationAdapter;
+import com.example.customnotificationapp.Model.Medication;
+import com.example.customnotificationapp.R;
+
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
