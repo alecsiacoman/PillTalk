@@ -30,7 +30,6 @@ public class MedicationAdapter extends RecyclerView.Adapter<MedicationAdapter.Vi
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Medication medication = medicationList.get(position);
 
-        // Format the date and time
         @SuppressLint("DefaultLocale") String formattedDate = String.format("%02d/%02d/%04d", medication.getDay(), medication.getMonth() + 1, medication.getYear());
         @SuppressLint("DefaultLocale") String formattedTime = String.format("%02d:%02d", medication.getHour(), medication.getMinute());
 

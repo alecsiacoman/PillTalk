@@ -19,6 +19,7 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -31,61 +32,88 @@ public class MainActivity extends AppCompatActivity {
     private TimePicker timePicker;
     private DatePicker datePicker;
 
-
-    private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+    private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
             granted -> {
                 if (granted) {
-                    Toast.makeText(MainActivity.this, "Post notification permission granted", Toast.LENGTH_SHORT).show();
+                    showToast("Post notification permission granted");
                 } else {
-                    Toast.makeText(MainActivity.this, "Post notification permission not granted", Toast.LENGTH_SHORT).show();
+                    showToast("Post notification permission not granted");
                 }
-            });
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        editTextMedName = findViewById(R.id.editTextMedName);
-        timePicker = findViewById(R.id.timePicker);
+        initializeViews();
+
         Button btnAddMed = findViewById(R.id.buttonAddMed);
-        datePicker = findViewById(R.id.datePicker);
-
-        btnAddMed.setOnClickListener(view -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(MainActivity.this,
-                    android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
-                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                if (!alarmManager.canScheduleExactAlarms()) {
-                    Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                    startActivity(intent);
-                }
-            } else {
-                Medication med = setMedication();
-
-                Calendar notificationTime = Calendar.getInstance();
-                notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
-
-                if (notificationTime.before(Calendar.getInstance())) {
-                    Toast.makeText(MainActivity.this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
-
-                MedicationManager.getInstance().addMedication(med);
-
-                for(Medication medication : MedicationManager.getInstance().getMedicationList()){
-                    Log.d("Medication from list", medication.getMedName());
-                }
-
-
-                Toast.makeText(MainActivity.this, "Notification set!", Toast.LENGTH_SHORT).show();
-            }
-        });
+        btnAddMed.setOnClickListener(view -> handleAddMedication());
     }
 
-    public void speak(View view){
+    private void initializeViews() {
+        editTextMedName = findViewById(R.id.editTextMedName);
+        timePicker = findViewById(R.id.timePicker);
+        datePicker = findViewById(R.id.datePicker);
+    }
+
+    private void handleAddMedication() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(
+                MainActivity.this, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestNotificationPermission();
+        } else {
+            Medication med = createMedicationFromInputs();
+            setNotification(med);
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    private void requestNotificationPermission() {
+        activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!alarmManager.canScheduleExactAlarms()){
+                openExactAlarmSettings();
+            }
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private void openExactAlarmSettings() {
+        Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+        startActivity(intent);
+    }
+
+    private boolean isNotificationTimeValid(Medication med) {
+        Calendar notificationTime = Calendar.getInstance();
+        notificationTime.set(med.getYear(), med.getMonth() + 1, med.getDay(), med.getHour(), med.getMinute(), 0);
+        if (notificationTime.before(Calendar.getInstance())) {
+            showToast("The selected time is in the past!");
+            return false;
+        }
+        return true;
+    }
+
+    private Medication createMedicationFromInputs() {
+        return new Medication(
+                editTextMedName.getText().toString(),
+                datePicker.getYear(),
+                datePicker.getMonth(),
+                datePicker.getDayOfMonth(),
+                timePicker.getHour(),
+                timePicker.getMinute(),
+                (int) System.currentTimeMillis()
+        );
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    public void speak(View view) {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Start Speaking");
@@ -96,56 +124,74 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if(requestCode == 100 && resultCode == RESULT_OK){
-            assert data != null;
+        if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
             String voiceAlarm = Objects.requireNonNull(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)).get(0);
             setMedicationByVoice(voiceAlarm);
         }
     }
+
     private void setMedicationByVoice(String str) {
         String timePattern = "(\\d{1,2})(:\\d{2})?\\s*(a\\.m\\.|am|p\\.m\\.|pm)";
         String dayPattern = "(today|monday|tuesday|wednesday|thursday|friday|saturday|sunday)";
 
-        Log.d("Voice Message", str);
+        String timeMatch = extractTime(str, timePattern);
+        String dayMatch = extractDay(str, dayPattern);
 
-        String timeMatch = "";
-        String dayMatch;
-        String medName = "Medication";
-
-
-        // Extract time and day from the voice command
-        java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile(timePattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
-        if (timeMatcher.find()) {
-            timeMatch = timeMatcher.group();
-        }
-
-        java.util.regex.Matcher dayMatcher = java.util.regex.Pattern.compile(dayPattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
-        if (dayMatcher.find()) {
-            dayMatch = dayMatcher.group();
-        } else {
-            dayMatch = "today"; // Default to "today" if no day is mentioned
-        }
-
-        if(timeMatch.isEmpty() || dayMatch.isEmpty()){
-            Toast.makeText(this, "Please specify time (am/pm) and date", Toast.LENGTH_SHORT).show();
+        if (timeMatch.isEmpty() || dayMatch.isEmpty()) {
+            showToast("Please specify time (am/pm) and date");
             return;
         }
 
-        // Look for the word "for" and extract the medication name after it
+        String medName = extractMedNameFromVoice(str);
+        Medication med = createMedicationFromVoice(medName, timeMatch, dayMatch);
+
+        setNotification(med);
+    }
+
+    private void setNotification(Medication med){
+        if(med != null){
+            if (isNotificationTimeValid(med)) {
+                scheduleNotification(med, getNotificationTimeInMillis(med));
+                MedicationManager.getInstance().addMedication(med);
+            }
+        }
+    }
+
+    private String extractTime(String str, String timePattern) {
+        java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile(timePattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
+        if (timeMatcher.find()) {
+            return timeMatcher.group();
+        }
+        return "";
+    }
+
+    private String extractDay(String str, String dayPattern) {
+        java.util.regex.Matcher dayMatcher = java.util.regex.Pattern.compile(dayPattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
+        if (dayMatcher.find()) {
+            return dayMatcher.group();
+        }
+        return "today";
+    }
+
+    private String extractMedNameFromVoice(String str) {
+        String medName = "Medication";
         if (str.toLowerCase().contains("for")) {
             String[] words = str.split("\\s+");
             boolean foundFor = false;
             for (String word : words) {
                 if (foundFor) {
-                    medName = word; // Take the word after "for"
+                    medName = word;
                     break;
                 }
                 if (word.equalsIgnoreCase("for")) {
-                    foundFor = true; // Start capturing the medication name after "for"
+                    foundFor = true;
                 }
             }
         }
+        return medName;
+    }
 
+    private Medication createMedicationFromVoice(String medName, String timeMatch, String dayMatch) {
         int hour;
         int minute = 0;
         boolean isPM = timeMatch.toLowerCase().contains("p.m.");
@@ -157,77 +203,76 @@ public class MainActivity extends AppCompatActivity {
             minute = Integer.parseInt(timeParts[1].trim().replaceAll("\\D", ""));
         }
 
-        if (isPM) {
-            if (hour != 12) hour += 12;
-        } else {
-            if (hour == 12) hour = 0;
+        if (isPM && hour != 12) hour += 12;
+        if (!isPM && hour == 12) hour = 0;
+
+        int dayOfWeek = getDayOfWeekFromString(dayMatch);
+        if (dayOfWeek == -1) {
+            showToast("Please specify a valid day of the week (e.g., Monday, Tuesday, or Today).");
+            return null;
         }
+        int daysToAdd = 0;
+            int todayDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+            daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
 
-        Medication med = setMedication();
-        med.setMedName(medName);
-        med.setHour(hour);
-        med.setMinute(minute);
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
 
-        Calendar notificationTime = Calendar.getInstance();
-        notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
+        return new Medication(medName, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), hour, minute, (int) System.currentTimeMillis());
+    }
 
-        if (notificationTime.before(Calendar.getInstance())) {
-            Toast.makeText(this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
-            return;
+    private int getDayOfWeekFromString(String dayMatch) {
+        Log.d("Day of daymatch", dayMatch.toLowerCase());
+        switch (dayMatch.toLowerCase()) {
+            case "sunday":
+                return Calendar.SUNDAY;
+            case "monday":
+                return Calendar.MONDAY;
+            case "tuesday":
+                return Calendar.TUESDAY;
+            case "wednesday":
+                return Calendar.WEDNESDAY;
+            case "thursday":
+                return Calendar.THURSDAY;
+            case "friday":
+                return Calendar.FRIDAY;
+            case "saturday":
+                return Calendar.SATURDAY;
+            case "today":
+                return Calendar.getInstance().get(Calendar.DAY_OF_MONTH);
+            default:
+                return -1;
         }
-
-        scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
-
-        MedicationManager.getInstance().addMedication(med);
-
-        for(Medication medication : MedicationManager.getInstance().getMedicationList()){
-            Log.d("Medication from list", medication.getMedName());
-        }
-
-
-        Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
     }
 
     @SuppressLint("NewApi")
-    private void scheduleNotification(String medName, long triggerTime, Medication med) {
+    private void scheduleNotification(Medication med, long triggerTime) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
 
-        if (alarmManager.canScheduleExactAlarms()) {
+        if (alarmManager != null && alarmManager.canScheduleExactAlarms()) {
             Intent intent = new Intent(this, NotificationReceiver.class);
             intent.putExtra("title", "Meds Reminder");
-            intent.putExtra("text", "It's time to take the " + medName + "!");
-            if(med != null)
-                intent.putExtra("id", med.getId());
-            else
-                intent.putExtra("id", (int) triggerTime);
+            intent.putExtra("text", "It's time to take " + med.getMedName() + "!");
+            intent.putExtra("id", med.getId());
 
             PendingIntent pendingIntent = PendingIntent.getBroadcast(
                     this, (int) triggerTime, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-            Toast.makeText(this, "Medication reminder set!", Toast.LENGTH_SHORT).show();
+            showToast("Medication reminder set!");
         } else {
-            Toast.makeText(this, "Please allow exact alarm permission in settings", Toast.LENGTH_SHORT).show();
+            showToast("Please allow exact alarm permission in settings");
         }
     }
 
-    private Medication setMedication(){
-        String medName = editTextMedName.getText().toString();
-        int year = datePicker.getYear();
-        int month = datePicker.getMonth();
-        int day = datePicker.getDayOfMonth();
-        int hour = timePicker.getHour();
-        int minute = timePicker.getMinute();
-        int id = (int) System.currentTimeMillis();
-
-        return new Medication(medName, year, month, day, hour, minute, id);
+    private long getNotificationTimeInMillis(Medication med) {
+        Calendar notificationTime = Calendar.getInstance();
+        notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
+        return notificationTime.getTimeInMillis();
     }
 
     public void navigateToHomePage(View view) {
         Intent intent = new Intent(MainActivity.this, HomeActivity.class);
         startActivity(intent);
     }
-
 }
-
-
