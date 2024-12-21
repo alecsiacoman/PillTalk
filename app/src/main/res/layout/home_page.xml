@@ -41,8 +41,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/medicationList"
         android:layout_width="match_parent"
-        android:layout_height="420dp"
-        android:layout_marginTop="16dp" />
+        android:layout_height="450dp"
+        android:paddingTop="10dp" />
 
 <FrameLayout
     android:layout_width="match_parent"

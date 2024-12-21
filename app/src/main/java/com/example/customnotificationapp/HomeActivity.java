@@ -13,6 +13,8 @@ import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
     private List<Medication> medicationList;
+    private RecyclerView medicationListView;
+    private MedicationAdapter medicationAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,14 +22,24 @@ public class HomeActivity extends AppCompatActivity {
         setContentView(R.layout.home_page);
 
         medicationList = MedicationManager.getInstance().getMedicationList();
+
+        medicationListView = findViewById(R.id.medicationList);
+        medicationAdapter = new MedicationAdapter(medicationList);
+        medicationListView.setLayoutManager(new LinearLayoutManager(this));
+        medicationListView.setAdapter(medicationAdapter);
+
+        medicationAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        medicationAdapter.notifyDataSetChanged();
     }
 
     public void navigateToMainActivity(View view) {
         Intent intent = new Intent(HomeActivity.this, MainActivity.class);
         startActivity(intent);
-    }
-
-    public List<Medication> getMedicationList() {
-        return medicationList;
     }
 }
