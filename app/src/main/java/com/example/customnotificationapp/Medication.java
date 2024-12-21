@@ -2,12 +2,12 @@ package com.example.customnotificationapp;
 
 public class Medication {
     private String medName;
-    private int year;
-    private int month;
-    private int day;
+    private final int year;
+    private final int month;
+    private final int day;
     private int hour;
     private int minute;
-    private int id;
+    private final int id;
 
     public Medication(String medName, int year, int month, int day, int hour, int minute, int id){
         this.medName = medName;

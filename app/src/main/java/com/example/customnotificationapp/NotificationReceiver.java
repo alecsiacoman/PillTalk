@@ -1,5 +1,6 @@
 package com.example.customnotificationapp;
 
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,6 +10,7 @@ import java.util.List;
 
 public class NotificationReceiver extends BroadcastReceiver {
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onReceive(Context context, Intent intent) {
         String title = intent.getStringExtra("title");

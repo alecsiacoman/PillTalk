@@ -16,8 +16,6 @@ import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.TimePicker;
 import android.widget.Toast;
-
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
@@ -25,25 +23,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import java.util.Calendar;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
     private EditText editTextMedName;
     private TimePicker timePicker;
-    private Button btnAddMed;
     private DatePicker datePicker;
-    private String voiceAlarm;
 
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
-            new ActivityResultCallback<Boolean>() {
-                @Override
-                public void onActivityResult(Boolean granted) {
-                    if (granted) {
-                        Toast.makeText(MainActivity.this, "Post notification permission granted", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(MainActivity.this, "Post notification permission not granted", Toast.LENGTH_SHORT).show();
-                    }
+            granted -> {
+                if (granted) {
+                    Toast.makeText(MainActivity.this, "Post notification permission granted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "Post notification permission not granted", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -54,42 +48,39 @@ public class MainActivity extends AppCompatActivity {
 
         editTextMedName = findViewById(R.id.editTextMedName);
         timePicker = findViewById(R.id.timePicker);
-        btnAddMed = findViewById(R.id.buttonAddMed);
+        Button btnAddMed = findViewById(R.id.buttonAddMed);
         datePicker = findViewById(R.id.datePicker);
 
-        btnAddMed.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(MainActivity.this,
-                        android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                    activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
-                    AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                    if (!alarmManager.canScheduleExactAlarms()) {
-                        Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
-                        startActivity(intent);
-                    }
-                } else {
-                    Medication med = setMedicamentation();
-
-                    Calendar notificationTime = Calendar.getInstance();
-                    notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
-
-                    if (notificationTime.before(Calendar.getInstance())) {
-                        Toast.makeText(MainActivity.this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
-
-                    MedicationManager.getInstance().addMedication(med);
-
-                    for(Medication medi : MedicationManager.getInstance().getMedicationList()){
-                        Log.d("Medication from list", medi.getMedName());
-                    }
-
-
-                    Toast.makeText(MainActivity.this, "Notification set!", Toast.LENGTH_SHORT).show();
+        btnAddMed.setOnClickListener(view -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ActivityCompat.checkSelfPermission(MainActivity.this,
+                    android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                activityResultLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
+                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+                    startActivity(intent);
                 }
+            } else {
+                Medication med = setMedication();
+
+                Calendar notificationTime = Calendar.getInstance();
+                notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
+
+                if (notificationTime.before(Calendar.getInstance())) {
+                    Toast.makeText(MainActivity.this, "The selected time is in the past!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
+
+                MedicationManager.getInstance().addMedication(med);
+
+                for(Medication medication : MedicationManager.getInstance().getMedicationList()){
+                    Log.d("Medication from list", medication.getMedName());
+                }
+
+
+                Toast.makeText(MainActivity.this, "Notification set!", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -106,7 +97,8 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if(requestCode == 100 && resultCode == RESULT_OK){
-            voiceAlarm = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS).get(0);
+            assert data != null;
+            String voiceAlarm = Objects.requireNonNull(data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)).get(0);
             setMedicationByVoice(voiceAlarm);
         }
     }
@@ -117,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d("Voice Message", str);
 
         String timeMatch = "";
-        String dayMatch = "";
+        String dayMatch;
         String medName = "Medication";
 
 
@@ -135,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if(timeMatch.isEmpty() || dayMatch.isEmpty()){
-            Toast.makeText(this, "Please specifi time (am/pm) and date", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please specify time (am/pm) and date", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -143,12 +135,12 @@ public class MainActivity extends AppCompatActivity {
         if (str.toLowerCase().contains("for")) {
             String[] words = str.split("\\s+");
             boolean foundFor = false;
-            for (int i = 0; i < words.length; i++) {
+            for (String word : words) {
                 if (foundFor) {
-                    medName = words[i]; // Take the word after "for"
+                    medName = word; // Take the word after "for"
                     break;
                 }
-                if (words[i].equalsIgnoreCase("for")) {
+                if (word.equalsIgnoreCase("for")) {
                     foundFor = true; // Start capturing the medication name after "for"
                 }
             }
@@ -156,17 +148,13 @@ public class MainActivity extends AppCompatActivity {
 
         int hour;
         int minute = 0;
-        boolean isPM = false;
-
-        if (timeMatch.toLowerCase().contains("p.m.")) {
-            isPM = true;
-        }
+        boolean isPM = timeMatch.toLowerCase().contains("p.m.");
 
         String[] timeParts = timeMatch.split(":");
         hour = Integer.parseInt(timeParts[0].trim());
 
         if (timeParts.length > 1) {
-            minute = Integer.parseInt(timeParts[1].trim().replaceAll("[^\\d]", ""));
+            minute = Integer.parseInt(timeParts[1].trim().replaceAll("\\D", ""));
         }
 
         if (isPM) {
@@ -175,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             if (hour == 12) hour = 0;
         }
 
-        Medication med = setMedicamentation();
+        Medication med = setMedication();
         med.setMedName(medName);
         med.setHour(hour);
         med.setMinute(minute);
@@ -192,8 +180,8 @@ public class MainActivity extends AppCompatActivity {
 
         MedicationManager.getInstance().addMedication(med);
 
-        for(Medication medi : MedicationManager.getInstance().getMedicationList()){
-            Log.d("Medication from list", medi.getMedName());
+        for(Medication medication : MedicationManager.getInstance().getMedicationList()){
+            Log.d("Medication from list", medication.getMedName());
         }
 
 
@@ -223,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private Medication setMedicamentation(){
+    private Medication setMedication(){
         String medName = editTextMedName.getText().toString();
         int year = datePicker.getYear();
         int month = datePicker.getMonth();

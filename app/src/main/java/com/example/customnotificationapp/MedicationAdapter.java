@@ -1,5 +1,6 @@
 package com.example.customnotificationapp;
 
+import android.annotation.SuppressLint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,8 +31,8 @@ public class MedicationAdapter extends RecyclerView.Adapter<MedicationAdapter.Vi
         Medication medication = medicationList.get(position);
 
         // Format the date and time
-        String formattedDate = String.format("%02d/%02d/%04d", medication.getDay(), medication.getMonth() + 1, medication.getYear());
-        String formattedTime = String.format("%02d:%02d", medication.getHour(), medication.getMinute());
+        @SuppressLint("DefaultLocale") String formattedDate = String.format("%02d/%02d/%04d", medication.getDay(), medication.getMonth() + 1, medication.getYear());
+        @SuppressLint("DefaultLocale") String formattedTime = String.format("%02d:%02d", medication.getHour(), medication.getMinute());
 
         holder.medNameTextView.setText(medication.getMedName());
         holder.medDateTimeTextView.setText(String.format("%s at %s", formattedDate, formattedTime));

@@ -1,5 +1,6 @@
 package com.example.customnotificationapp;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -7,16 +8,14 @@ import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
     private static HomeActivity instance;
     private List<Medication> medicationList;
-    private RecyclerView medicationListView;
     private MedicationAdapter medicationAdapter;
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,7 +24,7 @@ public class HomeActivity extends AppCompatActivity {
 
         medicationList = MedicationManager.getInstance().getMedicationList();
 
-        medicationListView = findViewById(R.id.medicationList);
+        RecyclerView medicationListView = findViewById(R.id.medicationList);
         medicationAdapter = new MedicationAdapter(medicationList);
         medicationListView.setLayoutManager(new LinearLayoutManager(this));
         medicationListView.setAdapter(medicationAdapter);
@@ -33,6 +32,7 @@ public class HomeActivity extends AppCompatActivity {
         medicationAdapter.notifyDataSetChanged();
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Override
     protected void onResume() {
         super.onResume();
