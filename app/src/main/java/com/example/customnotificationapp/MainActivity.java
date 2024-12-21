@@ -2,7 +2,6 @@ package com.example.customnotificationapp;
 
 import android.annotation.SuppressLint;
 import android.app.AlarmManager;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,7 +14,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
@@ -25,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
@@ -34,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private Button btnAddMed;
     private DatePicker datePicker;
     private String voiceAlarm;
+
 
     private final ActivityResultLauncher<String> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(),
             new ActivityResultCallback<Boolean>() {
@@ -80,6 +80,14 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis());
+
+                    MedicationManager.getInstance().addMedication(med);
+
+                    for(Medication medi : MedicationManager.getInstance().getMedicationList()){
+                        Log.d("Medication from list", medi.getMedName());
+                    }
+
+
                     Toast.makeText(MainActivity.this, "Notification set!", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -129,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        int hour = 0;
+        int hour;
         int minute = 0;
         boolean isPM = false;
 
@@ -163,29 +171,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
         scheduleNotification("Medication", notificationTime.getTimeInMillis());
-        Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
-    }
 
+        MedicationManager.getInstance().addMedication(med);
 
-    private int getDayOfWeek(String day) {
-        switch (day) {
-            case "monday":
-                return Calendar.MONDAY;
-            case "tuesday":
-                return Calendar.TUESDAY;
-            case "wednesday":
-                return Calendar.WEDNESDAY;
-            case "thursday":
-                return Calendar.THURSDAY;
-            case "friday":
-                return Calendar.FRIDAY;
-            case "saturday":
-                return Calendar.SATURDAY;
-            case "sunday":
-                return Calendar.SUNDAY;
-            default:
-                return -1;
+        for(Medication medi : MedicationManager.getInstance().getMedicationList()){
+            Log.d("Medication from list", medi.getMedName());
         }
+
+
+        Toast.makeText(this, "Medication reminder set for " + dayMatch + " at " + timeMatch, Toast.LENGTH_SHORT).show();
     }
 
     @SuppressLint("NewApi")
@@ -222,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(MainActivity.this, HomeActivity.class);
         startActivity(intent);
     }
+
 }
 
 

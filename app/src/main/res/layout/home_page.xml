@@ -38,6 +38,12 @@
         android:text="Set your medication reminder!"
         android:textSize="20dp" />
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/medicationList"
+        android:layout_width="match_parent"
+        android:layout_height="420dp"
+        android:layout_marginTop="16dp" />
+
 <FrameLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent">
