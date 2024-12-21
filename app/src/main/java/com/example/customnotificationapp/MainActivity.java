@@ -118,6 +118,8 @@ public class MainActivity extends AppCompatActivity {
 
         String timeMatch = "";
         String dayMatch = "";
+        String medName = "Medication";
+
 
         // Extract time and day from the voice command
         java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile(timePattern, java.util.regex.Pattern.CASE_INSENSITIVE).matcher(str);
@@ -135,6 +137,21 @@ public class MainActivity extends AppCompatActivity {
         if(timeMatch.isEmpty() || dayMatch.isEmpty()){
             Toast.makeText(this, "Please specifi time (am/pm) and date", Toast.LENGTH_SHORT).show();
             return;
+        }
+
+        // Look for the word "for" and extract the medication name after it
+        if (str.toLowerCase().contains("for")) {
+            String[] words = str.split("\\s+");
+            boolean foundFor = false;
+            for (int i = 0; i < words.length; i++) {
+                if (foundFor) {
+                    medName = words[i]; // Take the word after "for"
+                    break;
+                }
+                if (words[i].equalsIgnoreCase("for")) {
+                    foundFor = true; // Start capturing the medication name after "for"
+                }
+            }
         }
 
         int hour;
@@ -159,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Medication med = setMedicamentation();
+        med.setMedName(medName);
         med.setHour(hour);
         med.setMinute(minute);
 
@@ -170,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        scheduleNotification("Medication", notificationTime.getTimeInMillis(), null);
+        scheduleNotification(med.getMedName(), notificationTime.getTimeInMillis(), med);
 
         MedicationManager.getInstance().addMedication(med);
 

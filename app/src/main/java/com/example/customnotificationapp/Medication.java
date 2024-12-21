@@ -54,4 +54,8 @@ public class Medication {
     public int getId() {
         return id;
     }
+
+    public void setMedName(String medName) {
+        this.medName = medName;
+    }
 }
