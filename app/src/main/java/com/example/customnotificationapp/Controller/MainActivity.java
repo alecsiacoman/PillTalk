@@ -92,14 +92,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isNotificationTimeValid(Medication med) {
+        // Create a Calendar instance to represent the time the medication is scheduled for
         Calendar notificationTime = Calendar.getInstance();
-        notificationTime.set(med.getYear(), med.getMonth() + 1, med.getDay(), med.getHour(), med.getMinute(), 0);
+        notificationTime.set(med.getYear(), med.getMonth(), med.getDay(), med.getHour(), med.getMinute(), 0);
+
+        // Check if the notification time is before the current time
         if (notificationTime.before(Calendar.getInstance())) {
             showToast("The selected time is in the past!");
             return false;
         }
         return true;
     }
+
 
     private Medication createMedicationFromInputs() {
         return new Medication(
@@ -151,6 +155,8 @@ public class MainActivity extends AppCompatActivity {
 
         setNotification(med);
     }
+
+
 
     private void setNotification(Medication med){
         if(med != null){
@@ -207,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
             minute = Integer.parseInt(timeParts[1].trim().replaceAll("\\D", ""));
         }
 
-        if (isPM && hour != 12) hour += 12;
+        // Fix time handling for AM/PM
         if (!isPM && hour == 12) hour = 0;
 
         int dayOfWeek = getDayOfWeekFromString(dayMatch);
@@ -215,12 +221,16 @@ public class MainActivity extends AppCompatActivity {
             showToast("Please specify a valid day of the week (e.g., Monday, Tuesday, or Today).");
             return null;
         }
-        int daysToAdd = 0;
-            int todayDayOfWeek = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
-            daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
 
+        // Fix for 'today' calculation
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
+        if (dayMatch.equalsIgnoreCase("today")) {
+            calendar.setTimeInMillis(System.currentTimeMillis());
+        } else {
+            int todayDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+            int daysToAdd = (dayOfWeek - todayDayOfWeek + 7) % 7;
+            calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
+        }
 
         return new Medication(medName, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH), hour, minute, (int) System.currentTimeMillis());
     }
